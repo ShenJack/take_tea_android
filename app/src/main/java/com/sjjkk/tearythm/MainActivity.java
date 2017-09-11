@@ -70,7 +70,7 @@ public class MainActivity extends AppCompatActivity
         NavigationView navigationView = (NavigationView) findViewById(R.id.nav_view);
         navigationView.setNavigationItemSelectedListener(this);
 
-        dailyFragment = DailyFragment.newInstance("","");
+        dailyFragment = new DailyFragment();
         recommendFragment = RecommendFragment.newInstance("","");
         nearbyFragment = NearbyFragment.newInstance("","");
         switchToDaily();

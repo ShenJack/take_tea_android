@@ -1,19 +1,32 @@
-<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     tools:context="com.sjjkk.tearythm.recommand.RecommendFragment">
+    <RelativeLayout
+        android:layout_margin="0dp"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content">
 
-    <!-- TODO: Update blank fragment layout -->
-    <Button
+        <Button
+            android:textColor="@color/colorAccent"
+            android:id="@+id/test"
+            android:background = "@color/zhihu_capture"
+            android:layout_margin="0dp"
+            android:text="开始推荐"
+            android:fontFamily="sans-serif-light"
+            android:textSize="20sp"
+            android:layout_width="match_parent"
+            android:layout_height="100dp" />
 
-        android:layout_centerVertical="true"
-        android:layout_centerHorizontal="true"
-        android:layout_marginTop="200dp"
-        android:id="@+id/test"
-        android:text="开始推荐"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content" />
+        <ListView
+            android:layout_below="@id/test"
+            android:id="@+id/recommends"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            />
 
-
-</RelativeLayout>
+    </RelativeLayout>
+</LinearLayout>

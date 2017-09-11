@@ -3,7 +3,9 @@ package com.sjjkk.tearythm.daily;
 import android.content.Context;
 import android.net.Uri;
 import android.os.Bundle;
+import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -12,9 +14,15 @@ import android.widget.BaseAdapter;
 import android.widget.ImageView;
 import android.widget.ListAdapter;
 import android.widget.ListView;
+import android.widget.TextView;
 
 import com.bumptech.glide.Glide;
 import com.sjjkk.tearythm.R;
+import com.sjjkk.tearythm.data.Data;
+import com.sjjkk.tearythm.data.Tea;
+import com.sjjkk.tearythm.data.source.remote.TeaRythmApi;
+import com.sjjkk.tearythm.data.source.remote.TeaRythmRemoteService;
+import com.sjjkk.tearythm.view.TeaAdapter;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -22,6 +30,14 @@ import java.util.List;
 import butterknife.BindView;
 import butterknife.ButterKnife;
 import butterknife.Unbinder;
+import io.reactivex.Observer;
+import io.reactivex.android.schedulers.AndroidSchedulers;
+import io.reactivex.annotations.NonNull;
+import io.reactivex.disposables.Disposable;
+import io.reactivex.functions.Consumer;
+import io.reactivex.schedulers.Schedulers;
+
+import static android.content.ContentValues.TAG;
 
 /**
  * A simple {@link Fragment} subclass.
@@ -38,6 +54,8 @@ public class DailyFragment extends Fragment {
     private static final String ARG_PARAM1 = "param1";
     private static final String ARG_PARAM2 = "param2";
     private ListView listView;
+    private TeaAdapter adapter;
+
 
     // TODO: Rename and change types of parameters
     private String mParam1;
@@ -81,37 +99,15 @@ public class DailyFragment extends Fragment {
         // Inflate the layout for this fragment
         View view = inflater.inflate(R.layout.fragment_daily, container, false);
         listView = (ListView) view.findViewById(R.id.tea_list);
-        listView.setAdapter(new BaseAdapter() {
-            @Override
-            public int getCount() {
-                return 4;
-            }
 
-            @Override
-            public Object getItem(int position) {
-                return null;
-            }
-
-            @Override
-            public long getItemId(int position) {
-                return 0;
-            }
-
-            @Override
-            public View getView(int position, View convertView, ViewGroup parent) {
-                View v = null;
-                if (convertView != null) {
-                    v = convertView;
-                } else {
-                    v = LayoutInflater.from(getActivity().getApplicationContext()).inflate(
-                            R.layout.list_item, null);
-                }
-                ImageView img = (ImageView) v.findViewById(R.id.image);
-                Glide.with(getActivity()).load(KEY_FAKE_URL).into(img);
-                return v;
-            }
-        });
         return view;
+    }
+
+    @Override
+    public void onViewCreated(View view, @Nullable Bundle savedInstanceState) {
+        super.onViewCreated(view, savedInstanceState);
+        adapter = new TeaAdapter(getActivity());
+        listView.setAdapter(adapter);
     }
 
     // TODO: Rename method, update argument and hook method into UI event
@@ -130,6 +126,36 @@ public class DailyFragment extends Fragment {
 //            throw new RuntimeException(context.toString()
 //                    + " must implement OnFragmentInteractionListener");
 //        }
+    }
+
+
+    @Override
+    public void onResume() {
+        super.onResume();
+        TeaRythmRemoteService.INSTANCE.getRetrofitInstance()
+                .getTeaList().observeOn(AndroidSchedulers.mainThread())
+                .subscribeOn(Schedulers.newThread())
+                .subscribe(new Observer<Data>() {
+                    @Override
+                    public void onSubscribe(@NonNull Disposable d) {
+
+                    }
+
+                    @Override
+                    public void onNext(@NonNull Data data) {
+                        adapter.setTeas(data.getResult());
+                    }
+
+                    @Override
+                    public void onError(@NonNull Throwable e) {
+
+                    }
+
+                    @Override
+                    public void onComplete() {
+
+                    }
+                });
     }
 
     private List<String> getData() {
@@ -167,4 +193,6 @@ public class DailyFragment extends Fragment {
         // TODO: Update argument type and name
         void onFragmentInteraction(Uri uri);
     }
+
+
 }

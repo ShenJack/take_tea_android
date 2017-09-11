@@ -1,23 +1,39 @@
 package com.sjjkk.tearythm.recommand;
 
+import android.content.Intent;
+import android.support.design.widget.Snackbar;
+import android.support.v4.app.Fragment;
+import android.support.v4.app.FragmentManager;
+import android.support.v4.app.FragmentTransaction;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.net.Uri;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
-import android.support.v4.app.Fragment;
 import android.support.v7.app.AlertDialog;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.ListView;
+import android.widget.Toast;
 
 import com.sjjkk.tearythm.R;
+import com.sjjkk.tearythm.daily.DailyFragment;
+import com.sjjkk.tearythm.data.Data;
+import com.sjjkk.tearythm.data.source.remote.TeaRythmRemoteService;
+import com.sjjkk.tearythm.view.ExpandableTextView;
+import com.sjjkk.tearythm.view.TeaAdapter;
 import com.stepstone.stepper.StepperLayout;
 
 import java.util.ArrayList;
 import java.util.List;
+
+import io.reactivex.Observer;
+import io.reactivex.android.schedulers.AndroidSchedulers;
+import io.reactivex.annotations.NonNull;
+import io.reactivex.disposables.Disposable;
+import io.reactivex.schedulers.Schedulers;
 
 
 /**
@@ -33,9 +49,13 @@ public class RecommendFragment extends Fragment {
     // the fragment initialization parameters, e.g. ARG_ITEM_NUMBER
     private static final String ARG_PARAM1 = "param1";
     private static final String ARG_PARAM2 = "param2";
-    List<Integer> choices = new ArrayList<>();
-    private StepperLayout steppersView;
+    List<String > choices = new ArrayList<>();
     private Button button;
+    ListView listView;
+
+
+    private TeaAdapter teaAdapter;
+
 
     // TODO: Rename and change types of parameters
     private String mParam1;
@@ -77,20 +97,30 @@ public class RecommendFragment extends Fragment {
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
+
+        View view = inflater.inflate(R.layout.fragment_recommand, container, false);
+        listView = (ListView) view.findViewById(R.id.recommends);
         // Inflate the layout for this fragment
-        return inflater.inflate(R.layout.fragment_recommand, container, false);
+        return view;
     }
 
     @Override
     public void onViewCreated(View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
         button = (Button) getView().findViewById(R.id.test);
+//        ExpandableTextView expandableTextView = (ExpandableTextView) getView().findViewById(R.id.expand_textview);
+//        expandableTextView.setText("bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb");
         button.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 showDialog1();
             }
         });
+
+
+        teaAdapter = new TeaAdapter(getActivity());
+        listView.setAdapter(teaAdapter);
+
     }
 
     // TODO: Rename method, update argument and hook method into UI event
@@ -138,13 +168,15 @@ public class RecommendFragment extends Fragment {
         ages.add("18-40");
         ages.add("40-60");
         ages.add("60以上");
+
+        final int[] ageInt = {15,29,50,65};
         new AlertDialog.Builder(getActivity())
-                .setCancelable(false)
+                .setCancelable(true)
                 .setTitle("您的年龄阶段为...")
                 .setSingleChoiceItems(ages.toArray(new String[ages.size()]), -1, new DialogInterface.OnClickListener() {
                     @Override
                     public void onClick(DialogInterface dialog, int which) {
-                        choices.add(which);
+                        choices.add(String.valueOf(ageInt[which]));
                         dialog.cancel();
                         showDialog2();
                     }
@@ -153,18 +185,18 @@ public class RecommendFragment extends Fragment {
     }
 
     private void showDialog2() {
-        List<String> functions = new ArrayList<>();
+        final List<String> functions = new ArrayList<>();
         functions.add("消脂减肥");
         functions.add("治疗便秘");
         functions.add("预防心血管疾病");
         functions.add("治疗肠胃不适，降火去燥");
         new AlertDialog.Builder(getActivity())
-                .setCancelable(false)
+                .setCancelable(true)
                 .setTitle("您期待的功效有...")
                 .setSingleChoiceItems(functions.toArray(new String[functions.size()]), -1, new DialogInterface.OnClickListener() {
                     @Override
                     public void onClick(DialogInterface dialog, int which) {
-                        choices.add(which);
+                        choices.add(functions.get(which));
                         dialog.cancel();
                         showDialog3();
                     }
@@ -173,21 +205,61 @@ public class RecommendFragment extends Fragment {
     }
 
     private void showDialog3() {
-        List<String> tastes = new ArrayList<>();
+        final List<String> tastes = new ArrayList<>();
         tastes.add("清爽");
         tastes.add("微苦");
         tastes.add("醇厚");
         tastes.add("浓烈");
         new AlertDialog.Builder(getActivity())
-                .setCancelable(false)
+                .setCancelable(true)
                 .setTitle("您期望的口味是....")
                 .setSingleChoiceItems(tastes.toArray(new String[tastes.size()]), -1, new DialogInterface.OnClickListener() {
                     @Override
                     public void onClick(DialogInterface dialog, int which) {
-                        choices.add(which);
+                        choices.add(tastes.get(which));
                         dialog.cancel();
+                        submitResult();
                     }
                 })
                 .show();
+    }
+
+    private void submitResult() {
+        TeaRythmRemoteService.INSTANCE.getRetrofitInstance()
+                .getTeaAnswer(choices.get(0),choices.get(2),choices.get(1))
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribeOn(Schedulers.newThread())
+                .subscribe(new Observer<Data>() {
+                    @Override
+                    public void onSubscribe(@NonNull Disposable d) {
+
+                    }
+
+                    @Override
+                    public void onNext(@NonNull Data data) {
+                        if (data.getResult().size()>0){
+                            teaAdapter.setTeas(data.getResult());
+                        }
+                        else {
+                            Snackbar.make(getView(), "没有合适的推荐", Snackbar.LENGTH_LONG)
+                                    .setAction("再选一遍", new View.OnClickListener() {
+                                        @Override
+                                        public void onClick(View v) {
+                                            showDialog1();
+                                        }
+                                    }).show();
+                        }
+                    }
+
+                    @Override
+                    public void onError(@NonNull Throwable e) {
+
+                    }
+
+                    @Override
+                    public void onComplete() {
+                        choices.clear();
+                    }
+                });
     }
 }

@@ -15,6 +15,8 @@ import android.webkit.WebViewClient;
 
 import com.sjjkk.tearythm.R;
 
+import okhttp3.Interceptor;
+
 /**
  * A simple {@link Fragment} subclass.
  * Activities that contain this fragment must implement the
